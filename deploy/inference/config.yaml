@@ -1,0 +1,69 @@
+server:
+  host: 127.0.0.1
+  port: 6060
+
+task: "Pick up the thermal pad and place it on the red target RAM board."
+
+obs:
+  head_topic: /head_camera/zed/rgb/color/rect/image/compressed
+  wrist_left_topic: /wrist_camera_left/color/image_raw/compressed
+  wrist_right_topic: /wrist_camera_right/color/image_raw/compressed
+  head_crop: {x: 0, y: 74, w: 570, h: 286}
+  measured_topic: /left/franka_robot_state_broadcaster/measured_joint_states
+  gripper_topic: /left/gripper/joint_states
+  gripper_finger: robotiq_85_left_knuckle_joint
+  gripper_closed_rad: 0.8
+  jpeg_quality: 75
+  wrist_downscale: 2
+
+act:
+  target_topic: /left/gello/joint_states
+  joint_names: [left_fr3v2_joint1, left_fr3v2_joint2, left_fr3v2_joint3,
+                left_fr3v2_joint4, left_fr3v2_joint5, left_fr3v2_joint6,
+                left_fr3v2_joint7]
+  gripper_cmd_topic: /left/gripper/gripper_client/target_gripper_width_percent
+  chunk_fps: 15
+  exec_horizon: 30
+  prefetch_margin: 12
+  lag_extra_steps: 3
+  stream_hz: 100
+  smoother_config: smoother/config.yaml
+
+fine_mode:
+  exec_horizon: 30
+  auto_threshold_rad: 0.05
+
+rtc:
+  enabled: true
+  mode: guided
+
+head:
+  enabled: false
+  host: 127.0.0.1
+  port: 5561
+  correction: true
+  bounds: [0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.15]
+  delta_ema: 0.6
+  delta_max_age: 0.5
+  no_grip_delta: false
+  img_size: 144
+  jpeg_q: 85
+
+safety:
+  max_step_rad: 0.10
+  max_track_lag_rad: 0.25
+  q_min: [-2.71, -1.75, -2.87, -3.01, -2.77, 0.57, -2.99]
+  q_max: [ 2.71,  1.75,  2.87, -0.18,  2.77, 4.49,  2.99]
+  watchdog_s: 2.0
+
+finish:
+  enabled: true
+  closed_below: 0.25
+  open_above: 0.75
+  min_hold_s: 2.0
+  min_carry_rad: 0.6
+  reopen_s: 2.0
+  settle_s: 3.0
+
+debug:
+  chunk_dir: false

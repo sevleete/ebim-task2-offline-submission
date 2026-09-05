@@ -1,0 +1,23 @@
+[workspace]
+name = "ebim-offline-smoother"
+version = "0.1.0"
+description = "关节空间 jerk-limited 平滑器(防 FR3 大加速度抱死),部署推理用"
+channels = ["conda-forge"]
+platforms = ["linux-64"]
+
+[dependencies]
+python = "3.12.*"
+numpy = "*"
+pyyaml = "*"
+pip = "*"
+
+[pypi-dependencies]
+ruckig = "*"
+
+[activation.env]
+PYTHONPATH = ".."
+
+[tasks]
+demo = "python -m smoother demo"
+demo-clamp = "python -m smoother demo --impl clamp"
+info = "python -m smoother info"

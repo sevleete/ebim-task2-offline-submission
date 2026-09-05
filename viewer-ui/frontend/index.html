@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TMR · Mobile FR3 Duo 控制台</title>
+<link rel="stylesheet" href="/style.css">
+<script type="importmap">
+{"imports":{
+  "three":"/assets/vendor/three/three.module.js",
+  "three/addons/":"/assets/vendor/addons/"
+}}
+</script>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="logo"><span class="mark">◧</span><div><b>FR3 Duo</b><span>控制台</span></div></div>
+    <nav class="nav">
+      <a class="nav-item active" data-view="overview"><span class="ni">▤</span>概览</a>
+      <a class="nav-item" data-view="cameras"><span class="ni">◉</span>相机</a>
+      <a class="nav-item" data-view="control"><span class="ni">⎈</span>实时控制</a>
+    </nav>
+    <div id="alerts" class="side-alerts"></div>
+    <div class="side-foot">
+      <span id="conn" class="pill pill-off">连接中…</span>
+      <span id="clock" class="clock">--:--:--</span>
+      <span id="mode-tag" class="modetag"></span>
+    </div>
+  </aside>
+
+  <main class="content">
+
+    <!-- 概览 -->
+    <section class="view active" id="view-overview">
+      <h1>概览</h1>
+      <div class="tiles" id="tiles"></div>
+      <div class="card"><h2>主机 · 服务</h2><div id="hostsvc" class="hostsvc"></div></div>
+      <div class="card"><h2>控制器</h2><div id="controllers" class="ctrls"></div></div>
+    </section>
+
+    <!-- 相机 -->
+    <section class="view" id="view-cameras">
+      <h1>相机 <span class="hint">点击画面放大</span></h1>
+      <div id="cameras" class="cams-big"></div>
+    </section>
+
+    <!-- 实时控制(机器人 + 控制 + 3D 合并) -->
+    <section class="view" id="view-control">
+      <h1>实时控制 <span class="hint warn">⚠ 发送动作会真实操作机器人</span></h1>
+      <div id="ctrl-toast" class="toast"></div>
+      <div class="ctrl-grid">
+
+        <!-- 左列:状态 + 动作 -->
+        <div class="col-left">
+          <div class="card"><h2>状态</h2><div id="statebox" class="base"></div></div>
+          <div class="card"><h2>控制动作</h2><div class="btns col">
+            <button class="btn" data-act="enable_all">使能全部</button>
+            <div class="btns"><button class="btn sm" data-act="recover_left">恢复左臂</button>
+              <button class="btn sm" data-act="recover_right">恢复右臂</button></div>
+            <button class="btn" data-act="setup_collision">设碰撞阈值</button>
+            <div class="btns"><button class="btn sm" data-act="hold_both">Hold双臂</button>
+              <button class="btn sm" data-act="unhold_both">解除Hold</button></div>
+            <div class="btns inline"><input id="spine-val" type="number" step="0.01" min="0" max="1" value="0.50" class="num">
+              <button class="btn sm" data-act="spine">升降柱→</button></div>
+          </div></div>
+        </div>
+
+        <!-- 中列:STOP + 大 3D 孪生 -->
+        <div class="col-mid">
+          <button class="btn stop" data-act="down_arms">■ 停机械臂服务</button>
+          <div class="card twinwrap"><div class="twin-top">
+              <h2 style="margin:0">3D 数字孪生</h2>
+              <div class="tabs sm"><button class="tab active" id="mode-real">真实</button>
+                <button class="tab" id="mode-sim">仿真</button></div></div>
+            <canvas id="twin"></canvas>
+            <div id="twin-err" class="twin-err"></div>
+          </div>
+        </div>
+
+        <!-- 右列:双臂关节控制(上下展开) -->
+        <div class="col-right card">
+          <div class="srow speed"><span class="sn">速度</span>
+            <input type="range" min="5" max="100" value="30" id="spd">
+            <span class="sv" id="spd-v">30%</span></div>
+          <div class="armsec">
+            <div class="jt-head"><b>左臂</b>
+              <button class="btn sm send" id="send-left">发送PTP</button></div>
+            <div id="sliders-left" class="sliders"></div>
+          </div>
+          <div class="armsec">
+            <div class="jt-head"><b>右臂</b>
+              <button class="btn sm send" id="send-right">发送PTP</button></div>
+            <div id="sliders-right" class="sliders"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script type="module">
+  import { Twin } from "/twin.js";
+  const err = (m) => { const el = document.getElementById("twin-err"); if (el) el.textContent = m; };
+  try {
+    const t = new Twin(document.getElementById("twin"));
+    t.load("/assets/robot_full.urdf").then(() => { window.__twin = t; })
+      .catch((e) => { console.error("URDF/3D 加载失败", e); err("3D 加载失败:" + (e && e.message || e)); });
+  } catch (e) { console.error(e); err("3D 初始化失败:" + (e && e.message || e)); }
+</script>
+<script src="/app.js"></script>
+</body>
+</html>

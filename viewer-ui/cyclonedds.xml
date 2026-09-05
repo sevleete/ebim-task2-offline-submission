@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CycloneDDS xmlns="https://cdds.io/config">
+  <Domain Id="any">
+    <General>
+      <Interfaces>
+        <NetworkInterface autodetermine="false" name="enp3s0"/>
+      </Interfaces>
+      <MaxMessageSize>65500B</MaxMessageSize>
+      <AllowMulticast>spdp</AllowMulticast>
+    </General>
+    <Discovery>
+      <ParticipantIndex>auto</ParticipantIndex>
+      <MaxAutoParticipantIndex>250</MaxAutoParticipantIndex>
+      <Peers>
+        <Peer address="172.16.0.50"/>
+        <Peer address="172.16.0.100"/>
+        <Peer address="172.16.0.101"/>
+      </Peers>
+    </Discovery>
+    <Internal>
+      <SocketReceiveBufferSize min="10MB"/>
+    </Internal>
+  </Domain>
+</CycloneDDS>

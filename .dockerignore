@@ -1,0 +1,7 @@
+.git
+.pixi
+**/.pixi
+**/__pycache__
+docs/img
+out
+server/README.md

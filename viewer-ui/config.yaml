@@ -1,0 +1,50 @@
+
+hosts:
+  base:   {addr: 172.16.0.50,  user: tmr-user}
+  arms:   {addr: 172.16.0.100, user: aup}
+  teleop: {addr: 172.16.0.101, user: aup}
+
+sources:
+  arms: "source ~/tmr_env.sh"
+  teleop: "source ~/tmr_env.sh"
+  base: "export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp CYCLONEDDS_URI=file:///home/tmr-user/cyclonedds.xml && source /opt/ros/humble/setup.bash && source ~/ros2_ws/install/setup.bash"
+
+cameras:
+  - {key: head,        topic: /head_camera/zed/rgb/color/rect/image/compressed}
+  - {key: wrist_left,  topic: /wrist_camera_left/color/image_raw/compressed}
+  - {key: wrist_right, topic: /wrist_camera_right/color/image_raw/compressed}
+arms_joint_states:
+  - {key: left,  topic: /left/joint_states}
+  - {key: right, topic: /right/joint_states}
+gello:
+  - {key: left,  topic: /left/gello/joint_states}
+  - {key: right, topic: /right/gello/joint_states}
+odom: /swerve_drive_controller/odom
+cmd_vel: /swerve_drive_controller/cmd_vel
+
+services:
+  base:       {host: base,   pattern: "tmrv0_2.launch.py|swerve_drive_controller"}
+  zed:        {host: base,   pattern: "zed_camera.launch.py|zed_wrapper"}
+  lidar:      {host: base,   pattern: "franka_mobile_sensors.launch.py"}
+  spine:      {host: arms,   pattern: "franka_spine_server|spine.launch.py"}
+  grippers:   {host: arms,   pattern: "franka_gripper_manager|robotiq"}
+  arms:       {host: arms,   pattern: "franka_fr3_arm_controllers.launch.py", health: controllers}
+  wrist_cams: {host: arms,   pattern: "rs_multi_camera_launch|realsense2_camera"}
+  gello:      {host: teleop, pattern: "franka_gello_state_publisher|gello_publisher"}
+  pedal:      {host: teleop, pattern: "tmr_pedal_teleop|pedal_state_publisher"}
+
+controller_managers:
+  - {name: left,  host: arms, cm: /left/controller_manager}
+  - {name: right, host: arms, cm: /right/controller_manager}
+
+arm_state:
+  - {name: left,  host: arms, topic: /left/franka_robot_state_broadcaster/robot_state}
+  - {name: right, host: arms, topic: /right/franka_robot_state_broadcaster/robot_state}
+
+spine_service: {host: arms, service: /franka_spine_node/get_position, type: franka_spine_msgs/srv/GetPosition}
+
+poll_interval: 20.0
+spine_poll_interval: 60.0
+joint_names:
+  left:  [left_fr3v2_joint1, left_fr3v2_joint2, left_fr3v2_joint3, left_fr3v2_joint4, left_fr3v2_joint5, left_fr3v2_joint6, left_fr3v2_joint7]
+  right: [right_fr3v2_joint1, right_fr3v2_joint2, right_fr3v2_joint3, right_fr3v2_joint4, right_fr3v2_joint5, right_fr3v2_joint6, right_fr3v2_joint7]

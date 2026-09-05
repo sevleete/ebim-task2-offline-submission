@@ -1,0 +1,154 @@
+
+hosts:
+  base:
+    addr: 172.16.0.50
+    user: tmr-user
+    source: "export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp CYCLONEDDS_URI=file:///home/tmr-user/cyclonedds.xml && source /opt/ros/humble/setup.bash && source ~/ros2_ws/install/setup.bash"
+  arms:
+    addr: 172.16.0.100
+    user: aup
+    source: "source ~/tmr_env.sh"
+  teleop:
+    addr: 172.16.0.101
+    user: aup
+    source: "source ~/tmr_env.sh"
+
+
+services:
+  base:
+    desc: "TMR 底座 swerve controller"
+    host: base
+    launch: "ros2 launch franka_bringup tmrv0_2.launch.py controller_name:=swerve_drive_controller"
+    session: tmr_base
+    ready: {type: topic, name: /swerve_drive_controller/cmd_vel, timeout: 30}
+    stop: "tmrv0_2.launch.py|swerve_drive_controller|joint_state_publisher"
+
+  zed:
+    desc: "ZED-M 头部相机"
+    host: base
+    launch: "ros2 launch zed_wrapper zed_camera.launch.py camera_model:=zedm namespace:=head_camera publish_tf:=false serial_number:=17064700"
+    session: tmr_zed
+    ready: {type: topic, name: /head_camera/zed/rgb/color/rect/image, timeout: 120}
+    stop: "zed_camera.launch.py|zed_wrapper|zed_container"
+
+  lidar:
+    desc: "底盘雷达(franka_mobile_sensors,仅雷达)"
+    host: base
+    launch: "cd ~/ros2_ws && ros2 launch franka_mobile_sensors franka_mobile_sensors.launch.py start_cameras:=false start_rviz:=false start_lidars:=true"
+    session: tmr_lidar
+    ready: {type: none}
+    stop: "franka_mobile_sensors.launch.py|sick_safetyscanners2"
+
+  spine:
+    desc: "升降柱 Spine 服务"
+    host: arms
+    launch: "ros2 launch franka_spine_server spine.launch.py spine_ip:=172.16.16.10"
+    session: tmr_spine
+    ready: {type: service, name: /franka_spine_node/get_position, timeout: 30}
+    stop: "franka_spine_server|spine_action_server_node|spine.launch.py"
+
+  grippers:
+    desc: "Robotiq 双夹爪 manager"
+    host: arms
+    launch: "ros2 launch franka_gripper_manager robotiq_gripper_controller_client.launch.py config_file:=example_fr3_duo_config_robotiq.yaml"
+    session: tmr_grippers
+    ready: {type: topic, name: /left/gripper/joint_states, timeout: 30}
+    stop: "franka_gripper_manager|robotiq"
+
+  arms:
+    desc: "双 FR3 机械臂 controller"
+    host: arms
+    launch: "ros2 launch franka_fr3_arm_controllers franka_fr3_arm_controllers.launch.py robot_config_file:=tmr_duo_config.yaml"
+    session: tmr_arms
+    ready: {type: topic, name: /left/franka_robot_state_broadcaster/robot_state, timeout: 45}
+    stop: "franka_fr3_arm_controllers.launch.py|joint_impedance_controller|joint_state_publisher"
+    post: setup_collision
+
+  wrist_cams:
+    desc: "D405 双腕相机"
+    host: arms
+    launch: >-
+      ros2 launch realsense2_camera rs_multi_camera_launch.py
+      camera_namespace1:='/' camera_name1:='wrist_camera_left' serial_no1:=_409122272639
+      enable_sync1:=false enable_depth1:=false
+      depth_module.color_profile1:=640x480x15
+      camera_namespace2:='/' camera_name2:='wrist_camera_right' serial_no2:=_409122274492
+      enable_sync2:=false enable_depth2:=false
+      depth_module.color_profile2:=640x480x15
+    session: tmr_wrist_cams
+    ready: {type: topic, name: /wrist_camera_left/color/image_raw, timeout: 45}
+    stop: "rs_multi_camera_launch|realsense2_camera"
+
+  gello:
+    desc: "GELLO 左手柄 publisher(单臂遥操作:只左臂+左爪受控)"
+    host: teleop
+    launch: >-
+      ros2 run franka_gello_state_publisher gello_publisher --ros-args
+      -r __ns:=/left -r gello/joint_states:=gello/raw/joint_states
+      --params-file ~/gello_left.params.yaml
+    session: tmr_gello
+    ready: {type: topic, name: /left/gello/raw/joint_states, timeout: 30}
+    stop: "franka_gello_state_publisher|gello_publisher"
+
+  pedal:
+    desc: "脚踏板控制 Spine + TMR"
+    host: teleop
+    launch: "ros2 launch tmr_pedal_teleop mobile_teleop.launch.py"
+    session: tmr_pedal
+    ready: {type: topic, name: /pedal/state, timeout: 30}
+    stop: "tmr_pedal_teleop|pedal_state_publisher|base_bridge|spine_bridge"
+
+bringup_order: [base, zed, lidar, spine, grippers, arms, wrist_cams, gello, pedal]
+
+groups:
+  ctl:    [base, zed, lidar, spine, grippers, arms, wrist_cams]
+  teleop: [gello, pedal]
+
+interfaces:
+  base_cmd_vel:   {host: base, topic:   /swerve_drive_controller/cmd_vel,                              type: geometry_msgs/msg/TwistStamped}
+  spine_move:     {host: arms, action:  /franka_spine_node/move_absolute,                              type: franka_spine_msgs/action/MoveAbsolute}
+  spine_on:       {host: arms, service: /franka_spine_node/switch_on,                                  type: franka_spine_msgs/srv/SwitchOn}
+  spine_get:      {host: arms, service: /franka_spine_node/get_position,                               type: franka_spine_msgs/srv/GetPosition}
+  left_gripper:   {host: arms, topic:   /left/gripper/gripper_client/target_gripper_width_percent,     type: std_msgs/msg/Float32}
+  right_gripper:  {host: arms, topic:   /right/gripper/gripper_client/target_gripper_width_percent,    type: std_msgs/msg/Float32}
+  left_ptp:       {host: arms, action:  /left/action_server/ptp_motion,                                type: franka_msgs/action/PTPMotion}
+  right_ptp:      {host: arms, action:  /right/action_server/ptp_motion,                               type: franka_msgs/action/PTPMotion}
+  left_recover:   {host: arms, action:  /left/action_server/error_recovery,                            type: franka_msgs/action/ErrorRecovery}
+  right_recover:  {host: arms, action:  /right/action_server/error_recovery,                           type: franka_msgs/action/ErrorRecovery}
+  left_collision: {host: arms, service: /left/service_server/set_full_collision_behavior,             type: franka_msgs/srv/SetFullCollisionBehavior}
+  right_collision: {host: arms, service: /right/service_server/set_full_collision_behavior,           type: franka_msgs/srv/SetFullCollisionBehavior}
+  left_measured:  {host: arms, topic: /left/franka_robot_state_broadcaster/measured_joint_states,  type: sensor_msgs/msg/JointState}
+  right_measured: {host: arms, topic: /right/franka_robot_state_broadcaster/measured_joint_states, type: sensor_msgs/msg/JointState}
+  left_gello_cmd:  {host: arms, topic: /left/gello/joint_states,  type: sensor_msgs/msg/JointState}
+  right_gello_cmd: {host: arms, topic: /right/gello/joint_states, type: sensor_msgs/msg/JointState}
+
+hold_rate: 50
+
+spine_move_params: {velocity: 0.1, acceleration: 0.2, deceleration: 0.2}
+
+ptp_goal_template: "{goal_joint_configuration: __JOINTS__, maximum_joint_velocities: [0.3, 0.3, 0.3, 0.3, 0.4, 0.4, 0.4], goal_tolerance: 0.01}"
+
+collision_source: "source ~/tmr_env.sh"
+collision_behavior:
+  lower_torque_thresholds_acceleration: [25.0, 25.0, 22.0, 20.0, 19.0, 17.0, 14.0]
+  upper_torque_thresholds_acceleration: [35.0, 35.0, 32.0, 30.0, 29.0, 27.0, 24.0]
+  lower_torque_thresholds_nominal:      [25.0, 25.0, 22.0, 20.0, 19.0, 17.0, 14.0]
+  upper_torque_thresholds_nominal:      [35.0, 35.0, 32.0, 30.0, 29.0, 27.0, 24.0]
+  lower_force_thresholds_acceleration:  [35.0, 35.0, 35.0, 30.0, 30.0, 30.0]
+  upper_force_thresholds_acceleration:  [50.0, 50.0, 50.0, 42.0, 42.0, 42.0]
+  lower_force_thresholds_nominal:       [35.0, 35.0, 35.0, 30.0, 30.0, 30.0]
+  upper_force_thresholds_nominal:       [50.0, 50.0, 50.0, 42.0, 42.0, 42.0]
+
+graph_host: arms
+monitor_topics:
+  - {name: /head_camera/zed/rgb/color/rect/image,                  host: base,   hz: 14, be: true}
+  - {name: /wrist_camera_left/color/image_raw,                     host: arms,   hz: 30, be: true}
+  - {name: /wrist_camera_right/color/image_raw,                    host: arms,   hz: 30, be: true}
+  - {name: /left/gello/joint_states,                               host: teleop, hz: 30}
+  - {name: /right/gello/joint_states,                              host: teleop, hz: 30}
+  - {name: /left/joint_states,                                     host: arms,   hz: 30}
+  - {name: /right/joint_states,                                    host: arms,   hz: 30}
+  - {name: /swerve_drive_controller/odom,                          host: base,   hz: 50}
+controller_managers:
+  - {name: left,  host: arms, cm: /left/controller_manager}
+  - {name: right, host: arms, cm: /right/controller_manager}

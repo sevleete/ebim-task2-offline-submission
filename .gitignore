@@ -1,0 +1,16 @@
+# pixi
+.pixi/
+pixi.lock
+
+# python
+__pycache__/
+*.pyc
+*.egg-info/
+
+# 本地运行产物
+*.log
+tmr_logs/
+.DS_Store
+
+# 参赛方运维文档(不进提交仓库;server 的 Dockerfile 与入口随仓库提交)
+server/README.md

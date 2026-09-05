@@ -1,0 +1,137 @@
+
+ros:
+  domain_id: 0
+
+frames:
+  base: base_link
+  odom: world
+  map: map
+
+lidars:
+  front:
+    scan_topic: /lidar_front/scan
+    frame: lidar_front
+    mount_frame: lidar_front_mounting_point
+  rear:
+    scan_topic: /lidar_rear/scan
+    frame: lidar_rear
+    mount_frame: lidar_rear_mounting_point
+
+merger:
+  out_cloud_topic: /ebim/merged_cloud
+  out_scan_topic: /ebim/merged_scan
+  virtual_scan_bins: 1440
+  virtual_scan_range_max: 25.0
+  pair_max_dt: 0.2
+  range_clip_min: 0.12
+
+base:
+  cmd_vel_topic: /swerve_drive_controller/cmd_vel
+  odom_topic: /swerve_drive_controller/odom
+  max_vel_xy: 0.0525
+  max_vel_yaw: 0.075
+  max_acc_xy: 0.3
+
+global_locator:
+  search_region: [0.0, 0.0, 3.0, 3.0]
+  grid_step: 0.25
+  yaw_bins: 32
+  top_k: 20
+  icp_iters: 40
+
+tracker:
+  rate_hz: 10.0
+  icp_iters: 15
+  fitness_alarm: 0.35
+
+local_map:
+  crop_radius: 8.0
+  voxel: 0.05
+  scan_subsample: 1
+  icp_iters: 25
+  icp_max_corr: 0.30
+  fitness_min: 0.55
+  keyframe_trans: 0.10
+  keyframe_rot_deg: 5.0
+  max_points: 20000
+
+approach:
+  rotate_dir: ccw
+  rotate_target_deg: 90.0
+  rotate_tol_deg: 1.0
+  rotate_coarse_switch_deg: 15.0
+  rotate_wall_seen_frames: 3
+  rotate_max_extra_deg: 20.0
+  kp_yaw: 1.2
+  max_vel_yaw: 0.075
+  rear_gap_target: 0.25
+  rear_gap_tol: 0.01
+  rear_gap_min: 0.10
+  rear_len: 0.40
+  kp_xy: 1.0
+  kp_yaw_wall: 1.0
+  max_vel_xy: 0.0525
+  strafe_dist: 1.32
+  settle_frames: 5
+  stage_timeout: 300.0
+  wall_crop: {x_min: -3.0, x_max: -0.25, y_half: 1.2}
+  spine:
+    position: 0.6
+  prepare:
+    left_arm:  [0.4122, -0.6906, -0.2393, -2.5893, 0.0927, 2.1637, 1.3100]
+    right_arm: [-0.8325, -0.7093, 0.2961, -2.5254, 0.3770, 2.0277, -1.8413]
+
+dock:
+  ref_scan_file: paths/dock_ref.npz
+  crop_radius: 2.5
+  front_crop: {x_min: 0.4, x_max: 1.6, y_min: -0.85, y_max: 1.1}
+  match_voxel: 0.01
+  legs:
+    cluster_eps: 0.06
+    min_pts: 3
+    big_ext_max: 0.30
+    leg_max_extent: 0.10
+    rect_long: 1.225
+    rect_short: 0.70
+    rect_tol: 0.15
+    lock_min_legs: 4
+  lat_tol: 0.01
+  lat_speed: 0.025
+  dock_max_iters: 4
+  confirm_frames: 6
+  confirm_std: 0.02
+  lock_fitness: 0.6
+  lock_min_pts: 15
+  capture_radius: 0.6
+  tol_xy: 0.03
+  tol_yaw_deg: 1.5
+  kp_xy: 0.8
+  kp_yaw: 1.0
+  max_vel_xy: 0.05
+  max_vel_yaw: 0.075
+  deadband_xy: 0.01
+  deadband_yaw_deg: 0.5
+  settle_frames: 5
+  icp_max_corr: 0.4
+  icp_iters: 30
+
+  detect:
+    cluster_eps: 0.06
+    min_pts: 3
+    max_pts: 60
+    leg_max_extent: 0.15
+    roi: {x_min: 0.2, x_max: 2.5, y_min: -1.5, y_max: 1.5}
+    rect_angle_tol_deg: 15.0
+    rect_side_tol: 0.30
+    rect_min_score: 0.60
+    hold_frames: 8
+    leg_span: null
+    span_tol: 0.06
+
+  height_band: [0.30, 0.75]
+  sensors:
+    merged_scan:   {type: scan,  topic: /ebim/merged_scan,             frame: base_link}
+    front_scan:    {type: scan,  topic: /lidar_front/scan,             frame: lidar_front}
+    zed_cloud:     {type: cloud, topic: /head_camera/zed/point_cloud/cloud_registered, frame: ""}
+    d455_front:    {type: cloud, topic: /camera_front/depth/color/points, frame: ""}
+

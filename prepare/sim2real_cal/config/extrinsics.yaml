@@ -1,0 +1,10 @@
+front:
+  x: 0.3275
+  y: 0.2175
+  yaw_deg: -135.0
+  mirror: true
+rear:
+  x: -0.32
+  y: -0.215
+  yaw_deg: 45.0
+  mirror: true

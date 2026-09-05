@@ -1,0 +1,15 @@
+[workspace]
+name = "ebim-offline-controller"
+version = "0.1.0"
+description = "现场统一机器人 controller —— 跑在 det,经局域网 SSH 控制 Mobile FR3 Duo(.50/.100/.101)"
+channels = ["conda-forge"]
+platforms = ["linux-64"]
+
+[dependencies]
+python = "3.12.*"
+pyyaml = "*"
+rich = "*"
+pip = "*"
+
+[tasks]
+tmrctl = "python -m controller"
