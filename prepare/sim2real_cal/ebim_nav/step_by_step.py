@@ -211,7 +211,7 @@ class StepByStep:
 
 
 def main():
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(description="")
     g = ap.add_mutually_exclusive_group()
     g.add_argument("--cw", action="store_true", help="顺时针转 90°")
     g.add_argument("--ccw", action="store_true", help="逆时针转 90°")

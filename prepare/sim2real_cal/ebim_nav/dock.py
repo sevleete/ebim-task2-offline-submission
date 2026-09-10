@@ -9,7 +9,7 @@ from ebim_nav.utils.feed import CloudOdomFeed
 
 
 def main():
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(description="")
     ap.add_argument("--dry", action="store_true", help="只测不横移")
     args = ap.parse_args()
 

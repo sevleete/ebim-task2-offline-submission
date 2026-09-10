@@ -44,7 +44,7 @@ class CloudViz(Node):
 
 
 def main():
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(description="")
     ap.add_argument("--range", type=float, default=3.0, help="视窗半宽 [m]（默认 3）")
     ap.add_argument("--rate", type=float, default=10.0, help="刷新率 [Hz]（默认 10）")
     ap.add_argument("--size", type=float, default=6.0, help="点大小（桌腿细，可调大）")
