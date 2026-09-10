@@ -2,7 +2,7 @@ FROM ros:jazzy-ros-base
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-jazzy-rmw-cyclonedds-cpp ros-jazzy-cv-bridge \
-    python3-opencv python3-numpy python3-yaml python3-pip \
+    python3-opencv python3-numpy python3-scipy python3-yaml python3-pip \
     openssh-client iproute2 && \
     rm -rf /var/lib/apt/lists/*
 RUN pip3 install --no-cache-dir --break-system-packages ruckig rich pillow
