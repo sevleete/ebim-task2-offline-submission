@@ -12,6 +12,11 @@ from ebim_nav.common import PKG_ROOT
 from ebim_nav.icp2d import icp_2d, se2_matrix, se2_params, transform_points
 
 
+def _ts() -> str:
+    t = time.time()
+    return time.strftime("%H:%M:%S", time.localtime(t)) + f".{int((t % 1) * 1000):03d}"
+
+
 def crop_radius(pts: np.ndarray, r: float) -> np.ndarray:
     return pts[np.hypot(pts[:, 0], pts[:, 1]) < r]
 
@@ -293,6 +298,7 @@ class DockLateral:
 
     def measure_midy(self, feed):
         vals, last, t0 = [], 0.0, time.time()
+        print(f"  [dock ⏱ {_ts()}] 开始测量前2腿(需连续{self.confirm_n}帧, std≤{self.confirm_std})")
         while time.time() - t0 < 4.0:
             g = feed.latest()
             if g is None or g[0] <= last:
@@ -312,7 +318,9 @@ class DockLateral:
         for it in range(self.max_iter):
             feed.stop_cmd()
             time.sleep(0.4)
+            t_meas = time.time()
             my, ng, _ = self.measure_midy(feed)
+            print(f"  [dock ⏱ {_ts()}] 测量结束 用时{time.time() - t_meas:.2f}s 帧数={ng} 结果={'None' if my is None else f'{my:+.3f}'}")
             if my is None:
                 print(f"\n✗ dock：{ng} 帧未稳定确认前2腿（车没正对桌 / 抖动 / front_crop 没框住）")
                 return False
@@ -325,6 +333,7 @@ class DockLateral:
             if dry:
                 print("  [DRY] 只测不横移")
                 return True
+            print(f"  [dock ⏱ {_ts()}] 下发横移指令 vy={-math.copysign(self.speed, dy):+.3f}m/s 目标距离={abs(dy):.3f}m")
             self._move(feed, -math.copysign(self.speed, dy), abs(dy))
         print("⚠️ dock 迭代到上限仍未进容差")
         return False
@@ -333,13 +342,20 @@ class DockLateral:
         g = feed.latest()
         ox, oy = g[2][0], g[2][1]
         t0 = time.time()
+        n_cmd, reason = 0, "timeout"
         while time.time() - t0 < self.timeout:
             g = feed.latest()
             if g is None:
                 time.sleep(0.02)
                 continue
             if math.hypot(g[2][0] - ox, g[2][1] - oy) >= dist:
+                reason = "到位"
                 break
             feed.send(0.0, vy, 0.0, self.speed, self.max_yaw)
+            n_cmd += 1
             time.sleep(0.02)
         feed.stop_cmd()
+        g = feed.latest()
+        moved = math.hypot(g[2][0] - ox, g[2][1] - oy) if g is not None else float("nan")
+        print(f"  [dock ⏱ {_ts()}] 横移结束({reason}) 用时{time.time() - t0:.2f}s 发令{n_cmd}次 "
+              f"指令距离={dist:.3f}m odom实走={moved:.3f}m 差={moved - dist:+.3f}m")
