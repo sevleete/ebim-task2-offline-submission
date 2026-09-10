@@ -95,9 +95,9 @@ dock:
     rect_short: 0.70
     rect_tol: 0.15
     lock_min_legs: 4
-  lat_tol: 0.01
+  lat_tol: 0.015
   lat_speed: 0.025
-  dock_max_iters: 4
+  dock_max_iters: 10
   confirm_frames: 6
   confirm_std: 0.02
   lock_fitness: 0.6
