@@ -153,7 +153,7 @@ def front_leg_pair(pts: np.ndarray, leg_cfg: dict):
         c = pts[labels == lb]
         if len(c) < leg_cfg["min_pts"]:
             continue
-        ext = float(max(c[:, 0].ptp(), c[:, 1].ptp()))
+        ext = float(max(np.ptp(c[:, 0]), np.ptp(c[:, 1])))
         if ext > leg_cfg["leg_max_extent"]:
             continue
         comp.append((c.mean(axis=0), len(c)))
@@ -185,7 +185,7 @@ def select_table_legs(pts: np.ndarray, leg_cfg: dict):
         c = pts[labels == lb]
         if len(c) < leg_cfg["min_pts"]:
             continue
-        ext = float(max(c[:, 0].ptp(), c[:, 1].ptp()))
+        ext = float(max(np.ptp(c[:, 0]), np.ptp(c[:, 1])))
         if ext > leg_cfg["big_ext_max"]:
             continue
         cand_c.append(c.mean(axis=0))
